@@ -110,7 +110,6 @@ def get_cifar100_dataloader(train=True, mean=0, std=1, batch_size=128, num_worke
 def n_right(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     maxk = max(topk)
-    batch_size = target.size(0)
 
     _, pred = output.topk(maxk, 1, True, True)
     pred = pred.t()
@@ -202,8 +201,8 @@ def train_model(model, optimizer, train_scheduler, criterion, device, train_load
     for epoch in range(n_epochs):
         e_start_t = time.time()
 
-        if epoch > 1:
-            train_scheduler.step(epoch)
+        if epoch > 1 and train_scheduler is not None:
+            train_scheduler.step()
 
         # trainin'
         tr_loss, tr_acc, tr_acc_5 = train_epoch(model, optimizer, criterion, device, train_loader)
