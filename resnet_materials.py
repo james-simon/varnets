@@ -2,6 +2,7 @@ import time
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 import torchvision
 from torchvision import transforms
 
@@ -33,23 +34,32 @@ class BasicBlock(nn.Module):
     def forward(self, x):
         return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
 
-class ResNet(nn.Module):
+class ResNet18(nn.Module):
 
-    def __init__(self, conv_module, lin_module, block_module, num_blocks, num_classes=100):
+    def __init__(self, conv_module, lin_module, first_conv_module=None, activation_function=None, num_classes=100):
         super().__init__()
 
         self.in_channels = 64
 
-        self.layer1 = nn.Sequential(
-            conv_module(3, 64, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True))
+        # self.activation_function = F.relu if activation_function is None else activation_function
+        
+        if first_conv_module is None:
+            self.layer1 = nn.Sequential(
+                conv_module(3, 64, kernel_size=3, padding=1, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True))
+        else:
+            self.layer1 = nn.Sequential(
+                first_conv_module(3, 64, kernel_size=3, padding=1, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True))
+
         #we use a different inputsize than the original paper
         #so conv2_x's stride is 1
-        self.layer2 = self._make_layer(conv_module, block_module, in_channels=64, out_channels=64, num_blocks=num_blocks[0], first_conv_stride=1)
-        self.layer3 = self._make_layer(conv_module, block_module, in_channels=64, out_channels=128, num_blocks=num_blocks[1], first_conv_stride=2)
-        self.layer4 = self._make_layer(conv_module, block_module, in_channels=128, out_channels=256, num_blocks=num_blocks[2], first_conv_stride=2)
-        self.layer5 = self._make_layer(conv_module, block_module, in_channels=256, out_channels=512, num_blocks=num_blocks[3], first_conv_stride=2)
+        self.layer2 = self._make_layer(conv_module, in_channels=64, out_channels=64, num_blocks=2, first_conv_stride=1)
+        self.layer3 = self._make_layer(conv_module, in_channels=64, out_channels=128, num_blocks=2, first_conv_stride=2)
+        self.layer4 = self._make_layer(conv_module, in_channels=128, out_channels=256, num_blocks=2, first_conv_stride=2)
+        self.layer5 = self._make_layer(conv_module, in_channels=256, out_channels=512, num_blocks=2, first_conv_stride=2)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = lin_module(512, num_classes)
 
@@ -65,11 +75,11 @@ class ResNet(nn.Module):
     #
     #     return nn.Sequential(*layers)
 
-    def _make_layer(self, conv_module, block_module, in_channels, out_channels, num_blocks, first_conv_stride):
+    def _make_layer(self, conv_module, in_channels, out_channels, num_blocks, first_conv_stride):
         strides = [first_conv_stride] + [1]*(num_blocks-1)
         layers = []
         for stride in strides:
-            layers.append(block_module(conv_module, in_channels, out_channels, stride=stride))
+            layers.append(BasicBlock(conv_module, in_channels, out_channels, stride=stride))
             in_channels = out_channels
         return nn.Sequential(*layers)
 
@@ -85,8 +95,8 @@ class ResNet(nn.Module):
 
         return output
 
-def ResNet18(conv_module, lin_module):
-    return ResNet(conv_module, lin_module, BasicBlock, [2, 2, 2, 2])
+# def ResNet18(conv_module, lin_module):
+#     return ResNet(conv_module, lin_module, BasicBlock, [2, 2, 2, 2])
 
 def kaiming_initialize(net):
   for m in net.modules():
