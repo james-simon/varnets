@@ -7,15 +7,15 @@ from torchvision import transforms
 
 class BasicBlock(nn.Module):
 
-    def __init__(self, in_channels, out_channels, stride=1):
+    def __init__(self, conv_module, in_channels, out_channels, stride=1):
         super().__init__()
 
         #residual function
         self.residual_function = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
+            conv_module(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            conv_module(out_channels, out_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_channels)
         )
 
@@ -26,7 +26,7 @@ class BasicBlock(nn.Module):
         #use 1*1 convolution to match the dimension
         if stride != 1 or in_channels != out_channels:
             self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+                conv_module(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(out_channels)
             )
 
@@ -35,50 +35,58 @@ class BasicBlock(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, num_block, num_classes=100):
+    def __init__(self, conv_module, lin_module, block, num_block, num_classes=100):
         super().__init__()
 
         self.in_channels = 64
 
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
+        self.layer1 = nn.Sequential(
+            conv_module(3, 64, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True))
         #we use a different inputsize than the original paper
         #so conv2_x's stride is 1
-        self.conv2_x = self._make_layer(block, 64, num_block[0], 1)
-        self.conv3_x = self._make_layer(block, 128, num_block[1], 2)
-        self.conv4_x = self._make_layer(block, 256, num_block[2], 2)
-        self.conv5_x = self._make_layer(block, 512, num_block[3], 2)
+        self.layer2 = self._make_layer(conv_module, block, 64, num_block[0], 1)
+        self.layer3 = self._make_layer(conv_module, block, 128, num_block[1], 2)
+        self.layer4 = self._make_layer(conv_module, block, 256, num_block[2], 2)
+        self.layer5 = self._make_layer(conv_module, block, 512, num_block[3], 2)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512, num_classes)
+        self.fc = lin_module(512, num_classes)
 
-    def _make_layer(self, block, out_channels, num_blocks, stride):
+    # def _make_layer(self, block, out_channels, num_blocks, stride):
+    #
+    #     # we have num_block blocks per layer, the first block
+    #     # could be 1 or 2, other blocks would always be 1
+    #     strides = [stride] + [1] * (num_blocks - 1)
+    #     layers = []
+    #     for stride in strides:
+    #         layers.append(block(self.in_channels, out_channels, stride))
+    #         self.in_channels = out_channels
+    #
+    #     return nn.Sequential(*layers)
 
-        # we have num_block blocks per layer, the first block
-        # could be 1 or 2, other blocks would always be 1
-        strides = [stride] + [1] * (num_blocks - 1)
+    def _make_layer(self, conv_module, block, in_channels, channels, num_blocks, first_conv_stride):
+        strides = [first_conv_stride] + [1]*(num_blocks-1)
         layers = []
         for stride in strides:
-            layers.append(block(self.in_channels, out_channels, stride))
-            self.in_channels = out_channels
-
+            layers.append(block(conv_module, in_channels, channels, stride, self.activation_function))
+            in_channels = channels
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        output = self.conv1(x)
-        output = self.conv2_x(output)
-        output = self.conv3_x(output)
-        output = self.conv4_x(output)
-        output = self.conv5_x(output)
+        output = self.layer1(x)
+        output = self.layer2(output)
+        output = self.layer3(output)
+        output = self.layer4(output)
+        output = self.layer5(output)
         output = self.avg_pool(output)
         output = output.view(output.size(0), -1)
         output = self.fc(output)
 
         return output
 
-def ResNet18():
-    return ResNet(BasicBlock, [2, 2, 2, 2])
+def ResNet18(conv_module, lin_module):
+    return ResNet(conv_module, lin_module, BasicBlock, [2, 2, 2, 2])
 
 def kaiming_initialize(net):
   for m in net.modules():
