@@ -65,7 +65,7 @@ class ResNet(nn.Module):
     #
     #     return nn.Sequential(*layers)
 
-    def _make_layer(self, conv_module, block_module, in_channels, out_channels, first_conv_stride, num_blocks):
+    def _make_layer(self, conv_module, block_module, in_channels, out_channels, num_blocks):
         strides = [first_conv_stride] + [1]*(num_blocks-1)
         layers = []
         for stride in strides:
