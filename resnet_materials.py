@@ -97,9 +97,9 @@ def get_cifar100_dataloader(train=True, mean=0, std=1, batch_size=128, num_worke
     transform_set = None
     if train:
         transform_set = transforms.Compose([
-            # transforms.RandomCrop(32, padding=4),
-            # transforms.RandomHorizontalFlip(),
-            # transforms.RandomRotation(15),
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(15),
             transforms.ToTensor(),
             transforms.Normalize(mean, std)
         ])
