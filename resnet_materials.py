@@ -2,18 +2,18 @@ import time
 
 import torch
 from torch import nn
-import torch.nn.functional as F
 import torchvision
 from torchvision import transforms
 
+def generate_activation_fn_module(activation_fn):
+    class ActivationFnModule(nn.Module):
+        def __init__(self):
+            super().__init__()
 
-class ActivationFnModule(nn.Module):
-    def __init__(self, activation_fn):
-        super().__init__()
-        self.activation_fn = activation_fn
+        def forward(self, input):
+            return activation_fn(input)
 
-    def forward(self, input):
-        return self.activation_fn(input)
+    return ActivationFnModule
 
 class BasicBlock(nn.Module):
 
