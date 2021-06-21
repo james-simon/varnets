@@ -20,13 +20,14 @@ def generate_nonlinear_operations(functions):
     class NonlinConv2d(nn.Conv2d):
         def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1,
                      bias=False, padding_mode="zeros"):
+            assert (not bias)
             self.n = in_channels * kernel_size ** 2
             super(NonlinConv2d, self).__init__(
                 in_channels, out_channels, kernel_size, stride, padding, dilation,
                 groups, bias, padding_mode)
 
         def forward(self, input: torch.Tensor):
-            outputs = [self._conv_forward(phi(input), xi(math.sqrt(self.n) * self.weight)) for (xi, phi) in functions]
+            outputs = [self._conv_forward(phi(input), xi(math.sqrt(self.n) * self.weight), self.bias) for (xi, phi) in functions]
             output = sum(outputs) / math.sqrt(self.n)
             return output
 
