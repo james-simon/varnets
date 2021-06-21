@@ -1,7 +1,10 @@
+import math
 import time
 
 import torch
 from torch import nn
+import torch.nn.functional as F
+
 import torchvision
 from torchvision import transforms
 
@@ -9,11 +12,35 @@ def generate_activation_fn_module(activation_fn):
     class ActivationFnModule(nn.Module):
         def __init__(self):
             super().__init__()
-
         def forward(self, input):
             return activation_fn(input)
-
     return ActivationFnModule
+
+def generate_nonlinear_operations(functions):
+    class NonlinConv2d(nn.Conv2d):
+        def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1,
+                     bias=False, padding_mode="zeros"):
+            self.n = in_channels * kernel_size ** 2
+            super(NonlinConv2d, self).__init__(
+                in_channels, out_channels, kernel_size, stride, padding, dilation,
+                groups, bias, padding_mode)
+
+        def forward(self, input: torch.Tensor):
+            outputs = [self._conv_forward(phi(input), xi(math.sqrt(self.n) * self.weight)) for (xi, phi) in functions]
+            output = sum(outputs) / math.sqrt(self.n)
+            return output
+
+    class NonlinDense(nn.Linear):
+        def __init__(self, in_features: int, out_features: int, bias=False):
+            self.n = in_features
+            super(NonlinDense, self).__init__(in_features, out_features, bias)
+
+        def forward(self, input: torch.Tensor):
+            outputs = [F.linear(phi(input), xi(math.sqrt(self.n) * self.weight), self.bias) for (xi, phi) in functions]
+            output = sum(outputs) / math.sqrt(self.n)
+            return output
+
+    return (NonlinConv2d, NonlinDense)
 
 class BasicBlock(nn.Module):
 
