@@ -73,23 +73,23 @@ class BasicBlock(nn.Module):
 
 class ResNet18(nn.Module):
 
-    def __init__(self, conv_module, lin_module, activation_fn_module, first_conv_module=None, num_classes=100):
+    def __init__(self, conv_module, lin_module, activation_fn_module, linear_first_conv=True, num_classes=100):
         super().__init__()
 
         self.in_channels = 64
 
         # self.activation_function = F.relu if activation_function is None else activation_function
 
-        if first_conv_module is None:
+        if linear_first_conv:
             self.layer1 = nn.Sequential(
-                conv_module(3, 64, kernel_size=3, padding=1, bias=False),
+                nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
                 nn.BatchNorm2d(64),
                 activation_fn_module())
         else:
             self.layer1 = nn.Sequential(
-                first_conv_module(3, 64, kernel_size=3, padding=1, bias=False),
+                conv_module(3, 64, kernel_size=3, padding=1, bias=False),
                 nn.BatchNorm2d(64),
-                nn.ReLU(inplace=True))
+                activation_fn_module())
 
         #we use a different inputsize than the original paper
         #so conv2_x's stride is 1
