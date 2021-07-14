@@ -281,4 +281,8 @@ def train_model(model, optimizer, train_scheduler, criterion, device, train_load
                   f'Test accuracy: {100 * te_acc:.2f}\t'
                   f'(top 5): {100 * te_acc_5:.2f}')
 
+        # if the loss is nan, meaning the net's probably diverged, stop training
+        if tr_loss != tr_loss:
+            break
+
     return (train_accs, train_accs_5, train_losses, test_accs, test_accs_5, test_losses)
