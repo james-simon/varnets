@@ -282,6 +282,8 @@ def train_model(model, optimizer, train_scheduler, criterion, device, train_load
                   f'(top 5): {100 * te_acc_5:.2f}')
 
         # if the loss is nan, meaning the net's probably diverged, stop training
+        print(tr_loss)
+        print(tr_loss == tr_loss)
         if tr_loss != tr_loss:
             break
 
