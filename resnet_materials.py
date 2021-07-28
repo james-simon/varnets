@@ -140,7 +140,7 @@ def kaiming_initialize(net):
     if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
       nn.init.kaiming_normal_(m.weight)
 
-def get_cifar10_dataloader(train=True, mean=0, std=1, batch_size=128, num_workers=4, shuffle=True):
+def get_cifar10_dataloader(train=True, mean=(.491,.482,.447), std=(.247,.243,.262), batch_size=128, num_workers=4, shuffle=True):
     transform_set = None
     if train:
         transform_set = transforms.Compose([
@@ -159,7 +159,7 @@ def get_cifar10_dataloader(train=True, mean=0, std=1, batch_size=128, num_worker
     loader = torch.utils.data.DataLoader(data, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
     return loader
 
-def get_cifar100_dataloader(train=True, mean=0, std=1, batch_size=128, num_workers=4, shuffle=True):
+def get_cifar100_dataloader(train=True, mean=(.507,.487,.441), std=(.267,.256,.276), batch_size=128, num_workers=4, shuffle=True):
     transform_set = None
     if train:
         transform_set = transforms.Compose([
