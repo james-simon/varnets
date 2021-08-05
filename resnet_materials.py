@@ -69,7 +69,7 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
-        return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
+        return activation_fn_module()(self.residual_function(x) + self.shortcut(x))
 
 class ResNet18(nn.Module):
 
