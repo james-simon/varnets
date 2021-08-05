@@ -48,6 +48,8 @@ class BasicBlock(nn.Module):
     def __init__(self, conv_module, activation_fn_module, in_channels, out_channels, stride=1):
         super().__init__()
 
+        self.activation_fn_module = activation_fn_module
+
         #residual function
         self.residual_function = nn.Sequential(
             conv_module(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
@@ -69,7 +71,7 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
-        return activation_fn_module()(self.residual_function(x) + self.shortcut(x))
+        return self.activation_fn_module()(self.residual_function(x) + self.shortcut(x))
 
 class ResNet18(nn.Module):
 
